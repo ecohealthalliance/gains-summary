@@ -78,7 +78,7 @@ knitr::kable(viruses_per_animal, col.names = c("Viruses per animal", "Number of 
 ```{r, include = FALSE}
 total_tested <- length(unique(china$AnimalID..GAINS.))
 total_positive <- length(unique(china$AnimalID..GAINS.[china$positive > 0]))
-total_risk1 <- length(unique(china$AnimalID..GAINS.[china$Risklevel == 1]))
+total_risk1 <- length(na.omit(unique(china$AnimalID..GAINS.[china$Risklevel == 1])))
 ```
 
 - Total number of animals tested: `r total_tested`
@@ -152,6 +152,17 @@ riskfishtest <- fisher.test(riskfish)
 Just out of interest, I ran Fisher's exact test on the data. The p-value was $`r (riskfishtest$p.value)`$.
 
 # Frequencies for Risklevel = 1
+
+```{r, results = "asis"}
+risk1_viruses <- china %>%
+  filter(Risklevel == 1) %>%
+  group_by(VirusName) %>%
+  summarize(animals = length(unique(na.omit(AnimalID..GAINS.)))) %>%
+  select(VirusName, animals) %>%
+  arrange(desc(animals))
+
+knitr::kable(risk1_viruses, col.names = c("Virus name", "Number of animals"), caption = "'High risk' viruses from China GAINS data")
+```
 
 ```{r, results = "asis"}
 risk1_individual <- china %>%

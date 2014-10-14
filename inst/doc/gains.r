@@ -41,6 +41,130 @@ china[!is.na(china$VirusName), "positive"] <- 1
 
 
 ## ----, results = "asis"--------------------------------------------------
+viruses_per_animal <- china %>%
+  group_by(AnimalID..GAINS.) %>%
+  summarize(viruses_matched = length(unique(na.omit(VirusName)))) %>%
+  group_by(viruses_matched) %>%
+  summarize(individuals = length(viruses_matched))
+
+viruses_per_animal$percent <- round(viruses_per_animal$individuals / sum(viruses_per_animal$individuals) * 100, 2)
+
+knitr::kable(viruses_per_animal, col.names = c("Viruses per animal", "Number of animals", "Percentage"), caption = "Individual animals by sum of viruses")
+
+
+## ----, include = FALSE---------------------------------------------------
+total_tested <- length(unique(china$AnimalID..GAINS.))
+total_positive <- length(unique(china$AnimalID..GAINS.[china$positive > 0]))
+total_risk1 <- length(unique(china$AnimalID..GAINS.[china$Risklevel == 1]))
+
+
+## ----, results = "asis"--------------------------------------------------
+animals <- china %>%
+  group_by(SpeciesScientificName) %>%
+  summarize(SpeciesCommonNameEnglish = unique(SpeciesCommonNameEnglish),
+            number = length(unique(AnimalID..GAINS.))) %>%
+  arrange(desc(number))
+
+names(animals) <- c("scientific", "common", "number")
+animals$common <- sapply(animals$common, function(x) strsplit(x, " within")[[1]][1])
+
+knitr::kable(animals, col.names = c("Scientific name", "Common name", "Number tested"), caption = "Number of individuals tested per animal species")
+
+
+## ----, results = "asis"--------------------------------------------------
+PIG <- china %>%
+  group_by(PrimaryInterfaceGroup) %>%
+  summarize(number = length(unique(AnimalID..GAINS.))) %>%
+  arrange(desc(number))
+
+PIG$percent <- round(PIG$number / sum(PIG$number) * 100, 2)
+
+knitr::kable(PIG, col.names = c("Primary interface group", "Number of individuals", "Percentage"), caption = "Number of individuals tested per primary interface group")
+
+
+## ----, results = "asis"--------------------------------------------------
+SIG <- china %>%
+  group_by(SecondaryInterfaceGroup) %>%
+  summarize(number = length(unique(AnimalID..GAINS.))) %>%
+  arrange(desc(number))
+
+SIG$percent <- round(SIG$number / sum(SIG$number) * 100, 2)
+
+knitr::kable(SIG, col.names = c("Secondary interface group", "Number of individuals", "Percentage"), caption = "Number of individuals tested per secondary interface group")
+
+
+## ----, results = "asis"--------------------------------------------------
+china$risk1 <- 0
+china$risk1[china$Risklevel == 1] <- 1
+
+risk1_crosstab <- china %>%
+  group_by(AnimalID..GAINS.) %>%
+  filter(positive == 1) %>%
+  summarize(risk1 = ifelse(mean(risk1) > 0, 1, 0),
+            viruses_matched = length(unique(na.omit(VirusName)))) %>%
+  group_by(viruses_matched) %>%
+  summarize(individuals = length(viruses_matched),
+            risk1 = sum(risk1))
+
+risk1_crosstab$percent <- round(risk1_crosstab$risk1/risk1_crosstab$individuals * 100, 2)
+
+knitr::kable(risk1_crosstab, col.names = c("Viruses", "Individuals, total", "Individuals, 'high risk'", "Percentage"), caption = "Cross tabs of number of viruses in individuals by presence of risk level 1 virus")
+
+
+## ----, include = FALSE---------------------------------------------------
+riskfish <- risk1_crosstab[, 2:3]
+riskfish$other = riskfish$individuals - riskfish$risk1
+riskfish$individuals <- NULL
+riskfishtest <- fisher.test(riskfish)
+
+
+## ----, results = "asis"--------------------------------------------------
+risk1_individual <- china %>%
+  group_by(AnimalID..GAINS.) %>%
+  summarize(scientific = unique(SpeciesScientificName),
+            common = unique(SpeciesCommonNameEnglish),
+            risk1 = ifelse(mean(risk1) > 0, 1, 0),
+            PIG = unique(PrimaryInterfaceGroup),
+            SIG = unique(SecondaryInterfaceGroup))
+
+risk1_species <- risk1_individual %>%
+  group_by(scientific) %>%
+  summarize(common = unique(common),
+            animals = length(unique(AnimalID..GAINS.)),
+            risk1 = length(risk1[risk1 == 1]),
+            percent = round(risk1 / animals * 100, 2)) %>%
+  filter(risk1 > 0) %>%
+  arrange(desc(percent))
+
+risk1_species$common <- sapply(risk1_species$common, function(x) strsplit(x, " within")[[1]][1])
+
+knitr::kable(risk1_species, col.names = c("Scientific name", "Common name", "Tested", "'High risk'", "%"), caption = "Number of animals with 'high risk' viruses per species")
+
+
+## ----, results = "asis"--------------------------------------------------
+risk1_PIG <- risk1_individual %>%
+  group_by(PIG) %>%
+  summarize(animals = length(unique(AnimalID..GAINS.)),
+            risk1 = length(risk1[risk1 == 1]),
+            percent = round(risk1 / animals * 100, 2)) %>%
+  arrange(desc(percent))
+
+knitr::kable(risk1_PIG, col.names = c("Primary interface group", "Tested", "'High risk'", "%"), caption = "Number of animals with 'high risk' viruses per primary interface group")
+
+
+## ----, results = "asis"--------------------------------------------------
+risk1_SIG <- risk1_individual %>%
+filter(!(SIG == "")) %>%
+  group_by(SIG) %>%
+  summarize(animals = length(unique(AnimalID..GAINS.)),
+            risk1 = length(risk1[risk1 == 1]),
+            percent = round(risk1 / animals * 100, 2)) %>%
+  arrange(desc(percent))
+
+knitr::kable(risk1_SIG, col.names = c("Secondary interface group", "Tested", "'High risk'", "%"), caption = "Number of animals with 'high risk' viruses per secondary interface group")
+
+
+## ----, results = "asis"--------------------------------------------------
 viruses <- table(china$VirusName[!(china$VirusName == "")])
 viruses <- data.frame(viruses)
 viruses <- viruses[order(viruses$Freq, decreasing = TRUE), ]
@@ -57,36 +181,6 @@ knitr::kable(head(viruses, 15), col.names = c("Virus name", "Frequency"), captio
 
 
 ## ----, results = "asis"--------------------------------------------------
-kable2 <- function(x, ...) knitr::kable(data.frame(table(x)), ...)
-kable2(unique(china$VirusName) %in% kevin$virusname)
-
-
-## ----, results = "asis"--------------------------------------------------
-library(stringr)
-kevin$virusname <- str_replace_all(kevin$virusname, " ", "")
-kable2(unique(china$VirusName) %in% kevin$virusname)
-
-
-## ----, results = "asis"--------------------------------------------------
-select_first <- function(x) {
-    str_split(x, "\\|")[[1]][1]
-}
-
-china$VirusName <- sapply(china$VirusName, select_first, USE.NAMES = FALSE)
-kable2(unique(china$VirusName) %in% kevin$virusname)
-# unique(china$VirusName)[!((unique(china$VirusName) %in% kevin$virusname))]
-
-
-## ----, results = "asis"--------------------------------------------------
-china$VirusName[china$VirusName == "theSARSRelatedCoronavirusHKU3"] <- "SARSRelatedCoronavirusHKU3"
-china$VirusName[china$VirusName == ""] <- NA
-kable2(unique(china$VirusName) %in% kevin$virusname)
-
-
-## ----, results = "asis"--------------------------------------------------
-china <- left_join(china, kevin, by = c("VirusName" = "virusname"))
-china$positive <- 0
-china[!is.na(china$VirusName), "positive"] <- 1
 
 prev_by_risk <- china %>% # dplyr and magrittr
   group_by(Risklevel) %>%
