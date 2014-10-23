@@ -1,5 +1,5 @@
 ---
-title: "New GAINS Summaries"
+title: '`r paste0("GAINS Summaries for ", country)`'
 author:
     name: Toph Allen
     affiliation: EcoHealth Alliance
@@ -8,7 +8,7 @@ output:
         highlight: default
         latex_engine: pdflatex
         template: /Users/toph/.pandoc/templates/latex.template
-        keep_tex: true
+        keep_tex: false
     word_document:
         highlight: default
     html_document:
@@ -24,13 +24,7 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(dplyr)
 ```
 
-```{r load_and_subset, include = FALSE}
-country <- "China"
-data(all_gains)
-country_gains <- filter(all_gains, Country == country)
-```
 
-<!-- Summary for `r country`. -->
 
 # Summary data index variable
 
@@ -52,8 +46,8 @@ knitr::kable(viruses_per_animal, col.names = c("Viruses per animal", "Number of 
 
 ```{r, include = FALSE}
 total_tested <- length(unique(country_gains$AnimalID))
-total_positive <- length(unique(country_gains$AnimalID[country_gains$positive > 0]))
-total_risk1 <- length(na.omit(unique(country_gains$AnimalID[country_gains$RiskLevel == 1])))
+total_positive <- length(unique(country_gains$AnimalID[country_gains$Positive > 0]))
+total_risk1 <- length(na.omit(unique(country_gains$AnimalID[country_gains$RiskLevel == "High"])))
 ```
 
 - Total number of animals tested: `r total_tested`
@@ -114,14 +108,13 @@ risk1_crosstab$percent <- round(risk1_crosstab$risk1/risk1_crosstab$individuals 
 knitr::kable(risk1_crosstab, col.names = c("Viruses", "Individuals, total", "Individuals, 'high risk'", "Percentage"), caption = "Cross tabs of number of viruses in individuals by presence of risk level 1 virus")
 ```
 
-```{r, include = FALSE}
+<!-- ```{r, include = FALSE} Omit fisher test for now.
 riskfisher <- risk1_crosstab[, 2:3]
 riskfisher$other = riskfisher$individuals - riskfisher$risk1
 riskfisher$individuals <- NULL
-riskfishtest <- fisher.test(riskfisher)
-```
-
-Just out of interest, I ran Fisher's exact test on the data. The p-value was $`r (riskfishtest$p.value)`$.
+riskfishtest <- fisher.test(riskfisher, simulate.p.value = TRUE)
+Just out of interest, I ran Fisher's exact test on the data. The p-value was  (riskfishtest$p.value). # This goes outside
+``` -->
 
 # Frequencies for RiskLevel = 1
 
@@ -172,7 +165,6 @@ knitr::kable(risk1_PIG, col.names = c("Primary interface group", "Tested", "'Hig
 
 ```{r, results = "asis"}
 risk1_SIG <- risk1_individual %>%
-filter(!(SIG == "")) %>%
   group_by(SIG) %>%
   summarize(animals = length(unique(AnimalID)),
             risk1 = length(risk1[risk1 == 1]),

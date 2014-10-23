@@ -7,12 +7,6 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 library(dplyr)
 
 
-## ----load_and_subset, include = FALSE------------------------------------
-country <- "China"
-data(all_gains)
-country_gains <- filter(all_gains, Country == country)
-
-
 ## ----, results = "asis"--------------------------------------------------
 viruses_per_animal <- country_gains %>%
   group_by(AnimalID) %>%
@@ -28,7 +22,7 @@ knitr::kable(viruses_per_animal, col.names = c("Viruses per animal", "Number of 
 ## ----, include = FALSE---------------------------------------------------
 total_tested <- length(unique(country_gains$AnimalID))
 total_positive <- length(unique(country_gains$AnimalID[country_gains$positive > 0]))
-total_risk1 <- length(na.omit(unique(country_gains$AnimalID[country_gains$Risklevel == 1])))
+total_risk1 <- length(na.omit(unique(country_gains$AnimalID[country_gains$RiskLevel == 1])))
 
 
 ## ----, results = "asis"--------------------------------------------------
@@ -81,16 +75,9 @@ risk1_crosstab$percent <- round(risk1_crosstab$risk1/risk1_crosstab$individuals 
 knitr::kable(risk1_crosstab, col.names = c("Viruses", "Individuals, total", "Individuals, 'high risk'", "Percentage"), caption = "Cross tabs of number of viruses in individuals by presence of risk level 1 virus")
 
 
-## ----, include = FALSE---------------------------------------------------
-riskfisher <- risk1_crosstab[, 2:3]
-riskfisher$other = riskfisher$individuals - riskfisher$risk1
-riskfisher$individuals <- NULL
-riskfishtest <- fisher.test(riskfisher)
-
-
 ## ----, results = "asis"--------------------------------------------------
 risk1_viruses <- country_gains %>%
-  filter(Risklevel == 1) %>%
+  filter(RiskLevel == "High") %>%
   group_by(VirusName) %>%
   summarize(animals = length(unique(na.omit(AnimalID)))) %>%
   select(VirusName, animals) %>%
@@ -143,3 +130,4 @@ filter(!(SIG == "")) %>%
   arrange(desc(percent))
 
 knitr::kable(risk1_SIG, col.names = c("Secondary interface group", "Tested", "'High risk'", "%"), caption = "Number of animals with 'high risk' viruses per secondary interface group")
+
