@@ -12,8 +12,7 @@ library(magrittr)
 ## ----load_and_clean, include = FALSE-------------------------------------
 # Load China data
 china_full <- read.csv("inst/rawdata/CHINA.csv", as.is = TRUE)
-keeps <- c(1:4, 7, 8, 14, 16:20, 23, 24, 28, 40, 49:52, 55,
-    56, 60, 137, 138, 139)
+keeps <- c(1:4, 7, 8, 14, 16:20, 23, 24, 28, 40, 49:52, 55, 56, 60, 137, 138, 139)
 china <- china_full[, keeps]
 names(china)
 
@@ -55,7 +54,7 @@ knitr::kable(viruses_per_animal, col.names = c("Viruses per animal", "Number of 
 ## ----, include = FALSE---------------------------------------------------
 total_tested <- length(unique(china$AnimalID..GAINS.))
 total_positive <- length(unique(china$AnimalID..GAINS.[china$positive > 0]))
-total_risk1 <- length(unique(china$AnimalID..GAINS.[china$Risklevel == 1]))
+total_risk1 <- length(na.omit(unique(china$AnimalID..GAINS.[china$Risklevel == 1])))
 
 
 ## ----, results = "asis"--------------------------------------------------
@@ -116,6 +115,17 @@ riskfish <- risk1_crosstab[, 2:3]
 riskfish$other = riskfish$individuals - riskfish$risk1
 riskfish$individuals <- NULL
 riskfishtest <- fisher.test(riskfish)
+
+
+## ----, results = "asis"--------------------------------------------------
+risk1_viruses <- china %>%
+  filter(Risklevel == 1) %>%
+  group_by(VirusName) %>%
+  summarize(animals = length(unique(na.omit(AnimalID..GAINS.)))) %>%
+  select(VirusName, animals) %>%
+  arrange(desc(animals))
+
+knitr::kable(risk1_viruses, col.names = c("Virus name", "Number of animals"), caption = "'High risk' viruses from China GAINS data")
 
 
 ## ----, results = "asis"--------------------------------------------------
