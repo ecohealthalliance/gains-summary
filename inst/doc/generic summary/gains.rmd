@@ -96,7 +96,6 @@ knitr::kable(SIG, col.names = c("Secondary interface group", "Number of individu
 ```{r, results = "asis"}
 risk1_crosstab <- country_gains %>%
   group_by(AnimalID) %>%
-  filter(Positive == 1) %>%
   summarize(risk1 = ifelse(summary(RiskLevel)["High"] > 0, 1, 0),
             viruses_matched = length(unique(na.omit(VirusName)))) %>%
   group_by(viruses_matched) %>%
@@ -105,7 +104,7 @@ risk1_crosstab <- country_gains %>%
 
 risk1_crosstab$percent <- round(risk1_crosstab$risk1/risk1_crosstab$individuals * 100, 2)
 
-knitr::kable(risk1_crosstab, col.names = c("Viruses", "Individuals, total", "Individuals, 'high risk'", "Percentage"), caption = "Cross tabs of number of viruses in individuals by presence of risk level 1 virus")
+knitr::kable(risk1_crosstab, col.names = c("Viruses", "Individuals, total", "Individuals, 'high risk'", "'High risk' individuals / all"), caption = "Cross tabs of number of viruses in individuals by presence of risk level 1 virus")
 ```
 
 <!-- ```{r, include = FALSE} Omit fisher test for now.
