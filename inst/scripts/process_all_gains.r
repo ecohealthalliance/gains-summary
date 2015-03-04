@@ -30,7 +30,7 @@ kevin <- kevin %>%
 #------------------------------#
 
 # Load raw gains data
-all_gains_raw <- read.csv("inst/rawdata/ALLGAINS_Extract_9-25-2014-VIRUS.csv", as.is = TRUE)
+all_gains_raw <- read.csv("inst/rawdata/GAINS_Extract_11-11-2014 Virus.csv", as.is = TRUE)
 
 all_gains <- all_gains_raw %>%
   select(SiteName, # Pick variables we're interested in.
@@ -68,7 +68,9 @@ all_gains <- all_gains_raw %>%
                             levels = c(3, 2, 1),
                             labels = c("Low", "Medium", "High"),
                             ordered = TRUE),
-         Positive = as.integer(!is.na(RiskLevel)))
+         Positive = as.integer(!is.na(RiskLevel))) %>%
+  mutate(SpeciesScientificName = sentence_case(SpeciesScientificName), # Fix species names
+         SpeciesCommonNameEnglish = sentence_case(SpeciesCommonNameEnglish))
 
 all_gains[all_gains$VirusName == "", "VirusName"] <- NA
 

@@ -1,4 +1,4 @@
-output_country_summary <- function(country, document = "inst/doc/generic summary/gains.rmd", output_dir = NULL, ...) {
+output_country_summary <- function(country, document = "inst/doc/generic summary/gains_new.rmd", output_dir = NULL, ...) {
   require(dplyr)
   require(rmarkdown)
 
